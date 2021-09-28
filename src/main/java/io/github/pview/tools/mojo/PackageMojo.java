@@ -18,10 +18,10 @@ import java.nio.file.StandardCopyOption;
 import java.util.Set;
 
 @SuppressWarnings("FieldMayBeFinal")
-@Mojo(name = "Package", defaultPhase = LifecyclePhase.PACKAGE)
+@Mojo(name = "package", defaultPhase = LifecyclePhase.PACKAGE)
 public class PackageMojo extends AbstractMojo {
     public static final String PVIEW_RUNTIME_PATH_PROPERTY = "pview.tools.runtimePath";
-    @Parameter(defaultValue = "${project")
+    @Parameter(defaultValue = "${project}", required = true, readonly = true)
     private MavenProject project;
 
     @Parameter(name = "baseDir", defaultValue = "${project.basedir}")

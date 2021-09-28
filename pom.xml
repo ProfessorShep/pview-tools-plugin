@@ -6,7 +6,7 @@
 
     <groupId>io.github.pview</groupId>
     <artifactId>tools-plugin</artifactId>
-    <version>1.0.0</version>
+    <version>1.0.1</version>
 
     <organization>
         <name>pView</name>
@@ -27,6 +27,15 @@
             <url>https://maven.pkg.github.com/pViewApp/pview-tools-plugin</url>
         </repository>
     </distributionManagement>
+
+
+    <pluginRepositories>
+        <pluginRepository>
+            <id>github</id>
+            <url>https://maven.pkg.github.com/pViewApp/pview-tools-plugin</url>
+        </pluginRepository>
+
+    </pluginRepositories>
 
     <build>
         <sourceDirectory>src/main/java</sourceDirectory>
