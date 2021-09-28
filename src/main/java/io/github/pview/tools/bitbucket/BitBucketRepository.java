@@ -1,7 +1,5 @@
 package io.github.pview.tools.bitbucket;
 
-import picocli.CommandLine;
-
 import java.net.URI;
 import java.util.regex.Pattern;
 
@@ -52,22 +50,5 @@ public class BitBucketRepository {
         result = 31 * result + getName().hashCode();
         result = 31 * result + getUri().hashCode();
         return result;
-    }
-
-    @Override
-    public String toString() {
-        return getOwner() + "/" + getName();
-    }
-
-    public static final class Converter implements CommandLine.ITypeConverter<BitBucketRepository> {
-        private final Pattern pattern = Pattern.compile("https://bitbucket\\.org/(.*)/(.*)");
-
-
-        @Override
-        public BitBucketRepository convert(String value) throws Exception {
-            final var m = pattern.matcher(value);
-
-            return new BitBucketRepository(m.group(1), m.group(2));
-        }
     }
 }
