@@ -8,6 +8,11 @@
     <artifactId>tools-plugin</artifactId>
     <version>1.0.0</version>
 
+    <organization>
+        <name>pView</name>
+        <url>https://github.com/pViewApp</url>
+    </organization>
+
     <packaging>maven-plugin</packaging>
 
     <properties>
