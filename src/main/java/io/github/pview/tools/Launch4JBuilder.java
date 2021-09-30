@@ -44,7 +44,7 @@ public class Launch4JBuilder {
 
     public Path build(Path tmpDir) throws IOException {
         @SuppressWarnings("ConstantConditions") final var template = IOUtils.toString(
-                getClass().getResourceAsStream("/io/github/pview/tools/l4j=template.xml"),
+                getClass().getResourceAsStream("/io/github/pviewapp/tools/l4j-template.xml"),
                 StandardCharsets.UTF_8);
 
         final var config = String.format(
