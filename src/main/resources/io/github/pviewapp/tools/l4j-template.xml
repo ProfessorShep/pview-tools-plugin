@@ -4,7 +4,7 @@
     <dontWrapJar>true</dontWrapJar>
 
     <icon>%s</icon>
-    <oufile>%s</oufile>
+    <outfile>%s</outfile>
 
     <classPath>
         <mainClass>%s</mainClass>
