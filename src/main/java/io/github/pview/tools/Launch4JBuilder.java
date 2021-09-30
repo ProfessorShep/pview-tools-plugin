@@ -1,6 +1,7 @@
 package io.github.pview.tools;
 
 import org.apache.commons.io.IOUtils;
+import org.zeroturnaround.zip.ZipUtil;
 
 import java.io.IOException;
 import java.nio.charset.StandardCharsets;
@@ -42,7 +43,7 @@ public class Launch4JBuilder {
         return this;
     }
 
-    public Path build(Path tmpDir) throws IOException {
+    public Path build(Path workDir) throws IOException {
         @SuppressWarnings("ConstantConditions") final var template = IOUtils.toString(
                 getClass().getResourceAsStream("/io/github/pviewapp/tools/l4j-template.xml"),
                 StandardCharsets.UTF_8);
@@ -55,15 +56,19 @@ public class Launch4JBuilder {
                 multiValue("opt", jvmArgs)
         );
 
-        final var configPath = tmpDir.resolve("l4jConfig.xml");
+        final var configPath = workDir.resolve("l4jConfig.xml");
 
-        Files.createDirectories(tmpDir);
+        Files.createDirectories(workDir);
 
         try (final var out = Files.newOutputStream(configPath, StandardOpenOption.CREATE, StandardOpenOption.TRUNCATE_EXISTING)) {
             IOUtils.write(config, out, StandardCharsets.UTF_8);
         }
 
-        net.sf.launch4j.Main.main(new String[]{configPath.toString()});
+        if (!Files.exists(workDir.resolve("launch4j.exe"))) {
+            ZipUtil.unpack(getClass().getResourceAsStream("/io/github/pviewapp/tools/launch4j.zip"), workDir.toFile());
+        }
+
+        Runtime.getRuntime().exec(new String[]{"launch4j.exe", "l4jConfig.xml"}, null, workDir.toFile());
 
         return outFile;
     }

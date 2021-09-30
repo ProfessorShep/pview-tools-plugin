@@ -102,12 +102,6 @@
             <scope>provided</scope>
         </dependency>
         <dependency>
-            <groupId>net.sf.launch4j</groupId>
-            <artifactId>launch4j</artifactId>
-            <version>3.14</version>
-            <classifier>core</classifier>
-        </dependency>
-        <dependency>
             <groupId>org.zeroturnaround</groupId>
             <artifactId>zt-zip</artifactId>
             <version>1.14</version>
