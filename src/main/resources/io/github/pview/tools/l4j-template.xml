@@ -1,0 +1,23 @@
+<launch4jConfig>
+    <headerType>gui</headerType>
+
+    <dontWrapJar>true</dontWrapJar>
+
+    <icon>%s</icon>
+    <oufile>%s</oufile>
+
+    <classPath>
+        <mainClass>%s</mainClass>
+        <cp>./</cp>
+    </classPath>
+
+    <jre>
+        <path>runtime</path>
+        <bundledJre64Bit>true</bundledJre64Bit>
+
+        %s
+    </jre>
+
+
+    <chdir>.</chdir>
+</launch4jConfig>

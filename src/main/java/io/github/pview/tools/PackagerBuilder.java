@@ -1,17 +1,21 @@
 package io.github.pview.tools;
 
 import java.nio.file.Path;
+import java.util.List;
 import java.util.Objects;
 import java.util.Set;
 
 public class PackagerBuilder {
     private Path baseDir;
     private String appVersion;
-    private Set<String> jvmArgs = Set.of();
+    private List<String> jvmArgs = List.of();
     private Set<String> modules = Set.of();
     private String modulePath;
     private String appName;
     private String mainClass;
+
+    private List<String> jlinkArgs = List.of();
+    private List<String> jpackageArgs = List.of();
 
     public PackagerBuilder baseDirectory(Path baseDir) {
         this.baseDir = baseDir;
@@ -23,7 +27,7 @@ public class PackagerBuilder {
         return this;
     }
 
-    public PackagerBuilder jvmArguments(Set<String> jvmArgs) {
+    public PackagerBuilder jvmArguments(List<String> jvmArgs) {
         this.jvmArgs = jvmArgs;
         return this;
     }
@@ -48,6 +52,16 @@ public class PackagerBuilder {
         return this;
     }
 
+    public PackagerBuilder jlinkArgs(List<String> args) {
+        jlinkArgs = args;
+        return this;
+    }
+
+    public PackagerBuilder jpackageArgs(List<String> args) {
+        jpackageArgs = args;
+        return this;
+    }
+
     public Packager createPackager() {
         Objects.requireNonNull(baseDir);
         Objects.requireNonNull(appVersion);
@@ -58,6 +72,20 @@ public class PackagerBuilder {
         Objects.requireNonNull(modulePath);
         Objects.requireNonNull(modules);
 
-        return new Packager(baseDir, appVersion, Set.copyOf(jvmArgs), appName, mainClass, modulePath, Set.copyOf(modules));
+        Objects.requireNonNull(jlinkArgs);
+        Objects.requireNonNull(jpackageArgs);
+
+        return new Packager(
+                baseDir,
+                appVersion,
+                List.copyOf(jvmArgs),
+                appName,
+                mainClass,
+                modulePath,
+                Set.copyOf(modules),
+                List.copyOf(jlinkArgs),
+                List.copyOf(jpackageArgs)
+        );
     }
+
 }

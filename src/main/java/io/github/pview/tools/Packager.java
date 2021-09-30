@@ -18,7 +18,7 @@ public class Packager {
     private final Path baseDir;
 
     private final String appVersion;
-    private final Set<String> jvmArgs;
+    private final List<String> jvmArgs;
 
     private final String appName;
     private final String mainClass;
@@ -26,7 +26,18 @@ public class Packager {
     private final String modulePath;
     private final Set<String> modules;
 
-    Packager(Path baseDir, String appVersion, Set<String> jvmArgs, String appName, String mainClass, String modulePath, Set<String> modules) {
+    private final List<String> jlinkArgs;
+    private final List<String> jpackageArgs;
+
+    Packager(Path baseDir,
+             String appVersion,
+             List<String> jvmArgs,
+             String appName,
+             String mainClass,
+             String modulePath,
+             Set<String> modules,
+             List<String> jlinkArgs,
+             List<String> jpackageArgs) {
         this.baseDir = baseDir;
         this.appVersion = appVersion;
         this.jvmArgs = jvmArgs;
@@ -34,6 +45,9 @@ public class Packager {
         this.mainClass = mainClass;
         this.modulePath = modulePath;
         this.modules = modules;
+
+        this.jlinkArgs = jlinkArgs;
+        this.jpackageArgs = jpackageArgs;
     }
 
 
@@ -53,15 +67,13 @@ public class Packager {
             Files.delete(file);
         }
 
-        final ArrayList<String> args = new ArrayList<>(List.of(
-                "--compress=" + getProperty("pview.tools.jlink.compress", "2"),
-                "--strip-debug",
-                "--no-header-files",
-                "--no-man-pages",
-                "--strip-java-debug-attributes",
-                "--output", output.toString(),
-                "-p", modulePath
-        ));
+        final ArrayList<String> args = new ArrayList<>(jlinkArgs);
+
+        args.add("--output");
+        args.add(output.toString());
+
+        args.add("-p");
+        args.add(modulePath);
 
         if (!modules.isEmpty()) {
             args.add("--add-modules");
@@ -73,7 +85,7 @@ public class Packager {
         return output;
     }
 
-    public Path generateNativePackage(Path runtimePath) throws IOException, InterruptedException {
+    public Path generateNativePackage(Path outputDir, Path runtimePath) throws IOException, InterruptedException {
         final String installerType;
 
         if (getProperty("pview.tools.jpackage.outputType") != null) {
@@ -91,7 +103,7 @@ public class Packager {
             }
         }
 
-        final List<String> args = new ArrayList<>();
+        final List<String> args = new ArrayList<>(jpackageArgs);
 
         if (!installerType.isEmpty()) {
             args.add("-t");
@@ -102,24 +114,9 @@ public class Packager {
                 "-n", appName,
                 "-m", mainClass,
                 "--runtime-image", runtimePath.toAbsolutePath().toString(),
-                "--app-version", appVersion
+                "--app-version", appVersion,
+                "-d", outputDir.toAbsolutePath().toString()
         ));
-
-        put(args, "--file-associations", getProperty(getPropertyKey("jpackage.fileAssociations")));
-
-        put(args, "--vendor", getProperty(getPropertyKey("jpackage.vendor")));
-
-        put(args, "--copyright", getProperty(getPropertyKey("jpackage.copyright")));
-
-        put(args, "--description", getProperty(getPropertyKey("jpackage.description")));
-
-        put(args, "--icon", System.getProperty(getPropertyKey("jpackage.icon")));
-
-        put(args, "--license-file", System.getProperty(getPropertyKey("jpackage.license")));
-
-        put(args, "-i", System.getProperty(getPropertyKey("jpackage.include")));
-
-        put(args, "-d", System.getProperty(getPropertyKey("jpackage.output")));
 
 
         for (var jvmArg : jvmArgs) {
@@ -127,24 +124,13 @@ public class Packager {
             args.add(jvmArg);
         }
 
-        //noinspection SwitchStatementWithTooFewBranches  might add other platforms in future
-        switch (Platform.getCurrentPlatform()) {
-            case WINDOWS:
-                args.addAll(List.of(
-                        "--win-menu",
-                        "--win-menu-group", appName
-                ));
-                putIfTrue(args, "--win-per-user-install", Boolean.parseBoolean(getProperty(getPropertyKey("jpackage.userInstall"), "true")));
-                break;
-        }
-
         JPackage.run(args.toArray(new String[0]));
 
-        final BiPredicate<Path, BasicFileAttributes> jpackageOutputFinder = (p, bfa) -> p.getFileName().toString().contains(appName) && p.getFileName().toString().contains(appVersion);
-        final var jpackageOutputFolder = getProperty(getPropertyKey("jpackage.output"));
+        final BiPredicate<Path, BasicFileAttributes> jpackageOutputFinder = (p, bfa) -> p.getFileName().toString().contains(appName)
+                && p.getFileName().toString().contains(appVersion);
 
         return Files.find(
-                        jpackageOutputFolder != null ? Path.of(jpackageOutputFolder) : Path.of(System.getProperty("user.dir")),
+                        outputDir,
                         1,
                         jpackageOutputFinder
                 ).findAny()

@@ -1,5 +1,7 @@
 package io.github.pview.tools;
 
+import java.util.Locale;
+
 public enum Platform {
     WINDOWS, MAC, UNIX, SOLARIS, UNKNOWN;
 
@@ -9,12 +11,16 @@ public enum Platform {
     static {
         os = System.getProperty("os.name", "generic");
 
-        if (os.contains("mac") || os.contains("Mac") || os.contains("darwin")) {
-            currentPlatform = Platform.MAC;
-        } else if (os.contains("win") || os.contains("Win")) {
-            currentPlatform = Platform.WINDOWS;
-        } else if (os.contains("nux")) {
-            currentPlatform = Platform.UNIX;
+        final var osLower = os.toLowerCase(Locale.ENGLISH);
+
+        if (osLower.contains("mac") || osLower.contains("darwin")) {
+            currentPlatform = MAC;
+        } else if (osLower.contains("win")) {
+            currentPlatform = WINDOWS;
+        } else if (osLower.contains("nux") || osLower.contains("nix") || osLower.contains("aix")) {
+            currentPlatform = UNIX;
+        } else if (osLower.contains("sunos") || osLower.contains("solaris")) {
+            currentPlatform = SOLARIS;
         } else {
             currentPlatform = UNKNOWN;
         }

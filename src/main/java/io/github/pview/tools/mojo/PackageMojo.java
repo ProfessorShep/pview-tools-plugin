@@ -1,63 +1,90 @@
 package io.github.pview.tools.mojo;
 
-import io.github.pview.tools.Packager;
-import io.github.pview.tools.PackagerBuilder;
+import io.github.pview.tools.*;
+
+import org.apache.commons.io.FileUtils;
+import org.apache.maven.artifact.DependencyResolutionRequiredException;
+
 import org.apache.maven.plugin.AbstractMojo;
 import org.apache.maven.plugin.MojoExecutionException;
-import org.apache.maven.plugin.MojoFailureException;
-import org.apache.maven.plugins.annotations.LifecyclePhase;
-import org.apache.maven.plugins.annotations.Mojo;
-import org.apache.maven.plugins.annotations.Parameter;
+import org.apache.maven.plugins.annotations.*;
 import org.apache.maven.project.MavenProject;
+
+import org.zeroturnaround.zip.ZipUtil;
 
 import java.io.File;
 import java.io.IOException;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.StandardCopyOption;
-import java.util.Set;
+import java.util.*;
 
-@SuppressWarnings("FieldMayBeFinal")
-@Mojo(name = "package", defaultPhase = LifecyclePhase.PACKAGE)
+@SuppressWarnings({"FieldMayBeFinal"})
+@Mojo(name = "package", defaultPhase = LifecyclePhase.PACKAGE, requiresDependencyResolution = ResolutionScope.COMPILE_PLUS_RUNTIME)
+@Execute()
 public class PackageMojo extends AbstractMojo {
-    public static final String PVIEW_RUNTIME_PATH_PROPERTY = "pview.tools.runtimePath";
+    public static final String RUNTIME_PATH_PROPERTY = "pview.tools.runtimePath";
+    public static final String NATIVE_PACKAGE_PATH_PROPERTY = "pview.tools.nativePackagePath";
+
     @Parameter(defaultValue = "${project}", required = true, readonly = true)
     private MavenProject project;
 
-    @Parameter(name = "baseDir", defaultValue = "${project.basedir}")
+    @Parameter(defaultValue = "${project.basedir}", required = true, readonly = true)
     private File baseDir;
 
-    @Parameter(name = "appName", defaultValue = "${project.name}")
+    @Parameter(defaultValue = "${project.name}")
     private String appName;
 
-    @Parameter(name = "appVersion", defaultValue = "${project.version}")
+    @Parameter(defaultValue = "${project.version}")
     private String appVersion;
-
-    @Parameter(name = "modulePath", defaultValue = "${project.basedir}/classes")
-    private String modulePath;
 
     /**
      * The main executable class.
      *
      * Format: {@code <moduleName>/<className>}.
      */
-    @Parameter(name = "mainClass")
+    @Parameter(required = true)
     private String mainClass;
 
-    @Parameter(name = "jvmArguments")
-    private Set<String> jvmArguments = Set.of();
+    @Parameter
+    private List<String> jvmArguments = List.of();
 
-    @Parameter(name = "modules")
-    private Set<String> modules = Set.of();
+    @Parameter(required = true)
+    private Set<String> modules;
 
-    @Parameter(name = "runtimePath")
+    @Parameter
     private File runtimePath = null;
 
-    @Parameter(name = "outputPath", defaultValue = "${build.directory}")
-    private File outputPath = null;
+    @Parameter( defaultValue = "${build.directory}")
+    private File outputPath;
 
-    @Parameter(name = "runtimeName", defaultValue = "runtime")
-    private String runtimeFileName = null;
+    @Parameter(defaultValue = "runtime")
+    private String runtimeName;
+
+    @Parameter
+    private List<String> jlinkArguments = List.of();
+
+    @Parameter
+    private List<String> jpackageArguments = List.of();
+
+    @Parameter
+    private List<String> jpackageArgumentsWin = List.of();
+
+    @Parameter
+    private List<String> jpackageArgumentsMac = List.of();
+
+    @Parameter
+    private List<String> jpackageArgumentsLinux = List.of();
+
+    @Parameter
+    private Set<File> resources = Set.of();
+
+    @Parameter(required = true)
+    private File iconDirectory;
+
+    private Path effectiveRuntimePath;
+
+    private Packager packager;
 
     /**
      * The name of the native package.
@@ -69,28 +96,19 @@ public class PackageMojo extends AbstractMojo {
     private String nativePackageName = null;
 
     @Override
-    public void execute() throws MojoExecutionException, MojoFailureException {
-        System.setProperty("pview.tools.jpackage.output", outputPath.toString());
-
-        final var packager = createPackager();
-
-        final Path runtimePath;
-        if (this.runtimePath == null) {
-            try {
-                project.getProperties().setProperty(PVIEW_RUNTIME_PATH_PROPERTY,
-                        (runtimePath = packager.generateRuntime(outputPath.toPath().resolve(runtimeFileName)))
-                                .toString());
-            } catch (IOException | InterruptedException e) {
-                throw new MojoExecutionException("Execution during package runtime generation: " + e);
-            }
-        } else {
-            runtimePath = this.runtimePath.toPath();
+    public void execute() throws MojoExecutionException {
+        try {
+            packager = createPackager();
+        } catch (IOException e) {
+            throw new MojoExecutionException("Failed to begin packaging", e);
         }
+
+        final Path runtimePath = getRuntime();
 
         Path nativePackagePath;
 
         try {
-            nativePackagePath = packager.generateNativePackage(runtimePath);
+            nativePackagePath = packager.generateNativePackage(outputPath.toPath(), runtimePath);
         } catch (InterruptedException | IOException e) {
             throw new MojoExecutionException("Execution during package runtime generation: " + e);
         }
@@ -98,24 +116,117 @@ public class PackageMojo extends AbstractMojo {
         if (nativePackageName != null) {
             final var nativePackageFileName = nativePackagePath.getFileName().toString();
             try {
-                Files.move(nativePackagePath, nativePackagePath.getParent().resolve(
-                                String.format(nativePackageName, nativePackageFileName.substring(nativePackageFileName.lastIndexOf(".")))
+                nativePackagePath = Files.move(nativePackagePath, nativePackagePath.getParent().resolve(
+                                String.format(nativePackageName, nativePackageFileName.substring(nativePackageFileName.lastIndexOf(".") + 1))
                 ), StandardCopyOption.REPLACE_EXISTING);
             } catch (IOException e) {
                 throw new MojoExecutionException("Failed to rename file using format " + nativePackageName, e);
             }
         }
+
+        try {
+            createCompressedPackage();
+        } catch (IOException e) {
+            throw new MojoExecutionException("Failed to create zip package", e);
+        }
+
+        project.getProperties().setProperty(NATIVE_PACKAGE_PATH_PROPERTY, nativePackagePath.toAbsolutePath().toString());
     }
 
-    private Packager createPackager() {
-        return new PackagerBuilder()
-                .appName(appName)
-                .appVersion(appVersion)
-                .jvmArguments(jvmArguments)
+    private Packager createPackager() throws IOException {
+        final List<String> jpackageArgs = new ArrayList<>(jpackageArguments);
+
+        switch (Platform.getCurrentPlatform()) {
+            case WINDOWS:
+                jpackageArgs.addAll(jpackageArgumentsWin);
+                break;
+            case MAC:
+                jpackageArgs.addAll(jpackageArgumentsMac);
+                break;
+            case UNIX:
+                jpackageArgs.addAll(jpackageArgumentsLinux);
+                break;
+        }
+
+        jpackageArgs.add("--icon");
+        jpackageArgs.add(Icons.get(iconDirectory.toPath()).toString());
+
+        try {
+            final var modulePath = String.join(File.pathSeparator, project.getRuntimeClasspathElements());
+            getLog().debug("Using module path: " + modulePath);
+
+            return new PackagerBuilder()
+                    .appName(appName)
+                    .appVersion(appVersion)
+                    .jvmArguments(jvmArguments)
+                    .mainClass(mainClass)
+                    .modules(modules)
+                    .baseDirectory(baseDir.toPath())
+                    .modulePath(modulePath)
+                    .jlinkArgs(jlinkArguments)
+                    .jpackageArgs(jpackageArgs)
+                    .createPackager();
+        } catch (DependencyResolutionRequiredException e) {
+            throw new AssertionError(e);
+        }
+    }
+
+    private Path getRuntime() throws MojoExecutionException {
+        if (this.runtimePath == null) {
+            try {
+                project.getProperties().setProperty(RUNTIME_PATH_PROPERTY,
+                        (effectiveRuntimePath = packager.generateRuntime(outputPath.toPath().resolve(runtimeName)))
+                                .toString());
+            } catch (IOException | InterruptedException e) {
+                throw new MojoExecutionException("Execution during package runtime generation: " + e);
+            }
+        } else {
+            effectiveRuntimePath = this.runtimePath.toPath();
+        }
+
+        for (var resource : resources) {
+            final var path = resource.toPath();
+
+            try {
+                if (Files.isRegularFile(path)) {
+                    Files.copy(path, effectiveRuntimePath, StandardCopyOption.REPLACE_EXISTING);
+                } else {
+                    FileUtils.copyDirectoryToDirectory(resource, effectiveRuntimePath.toFile());
+                }
+            } catch (IOException e) {
+                throw new MojoExecutionException("Error during IO: ", e);
+            }
+        }
+        return effectiveRuntimePath;
+    }
+
+    private Path createCompressedPackage() throws IOException {
+        switch (Platform.getCurrentPlatform()) {
+            case WINDOWS:
+                return createWindowsPackage();
+            default:
+                return null;
+        }
+    }
+
+    private Path createWindowsPackage() throws IOException {
+        if (Platform.getCurrentPlatform() != Platform.WINDOWS) {
+            throw new UnsupportedOperationException("Platform needs to be windows for zip package");
+        }
+
+        final var winWrapper = new Launch4JBuilder()
+                .outputFile(effectiveRuntimePath.resolve(appName + ".exe"))
+                .jvmArgs(jvmArguments)
                 .mainClass(mainClass)
-                .modules(modules)
-                .baseDirectory(baseDir.toPath())
-                .modulePath(modulePath)
-                .createPackager();
+                .iconDirectory(iconDirectory.toPath())
+                .build(outputPath.toPath().resolve("launch4j-temp"));
+
+        final var zipLocation =
+                new File(outputPath, String.format("%s-%s.zip", appName, appVersion));
+        ZipUtil.pack(effectiveRuntimePath.toFile(), zipLocation);
+
+        Files.delete(winWrapper);
+
+        return zipLocation.toPath();
     }
 }
