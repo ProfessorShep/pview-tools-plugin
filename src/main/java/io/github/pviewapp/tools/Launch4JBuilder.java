@@ -53,7 +53,7 @@ public class Launch4JBuilder {
                 Icons.get(iconDirectory),
                 outFile,
                 mainClass,
-                multiValue("opt", jvmArgs)
+                processVmArgs()
         );
 
         final var configPath = workDir.resolve("l4jConfig.xml");
@@ -85,11 +85,11 @@ public class Launch4JBuilder {
         return outFile;
     }
 
-    private static String multiValue(String name, Collection<String> values) {
-        final StringBuilder s = new StringBuilder((name.length() + 3) * values.size() + (values.size() * 5));
+    private String processVmArgs() {
+        final StringBuilder s = new StringBuilder(("opt".length() + 3) * jvmArgs.size() + (jvmArgs.size() * 5));
 
-        for (var value : values) {
-            s.append("<").append(name).append(">").append(value).append("</").append(name).append(">\n");
+        for (var value : jvmArgs) {
+            s.append("<").append("opt").append(">").append(value.replace("$PV_RESOURCE_DIR", ".")).append("</opt>\n");
         }
 
         return s.toString();

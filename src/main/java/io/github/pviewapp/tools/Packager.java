@@ -52,6 +52,9 @@ public class Packager {
 
 
     public Path generateRuntime(Path output) throws IOException, InterruptedException {
+        if (output.getFileName().toString().equalsIgnoreCase("app")) {
+            throw new IllegalArgumentException("Name 'app' is reserved");
+        }
 
         output = output.isAbsolute() ? output : baseDir.resolve(output);
 
@@ -121,7 +124,7 @@ public class Packager {
 
         for (var jvmArg : jvmArgs) {
             args.add("--java-options");
-            args.add(jvmArg);
+            args.add(jvmArg.replace("$PV_RESOURCE_DIR", "$APPDIR/../" + runtimePath.getFileName().toString()));
         }
 
         JPackage.run(args.toArray(new String[0]));
