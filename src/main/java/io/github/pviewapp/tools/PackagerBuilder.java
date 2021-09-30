@@ -1,4 +1,4 @@
-package io.github.pview.tools;
+package io.github.pviewapp.tools;
 
 import java.nio.file.Path;
 import java.util.List;

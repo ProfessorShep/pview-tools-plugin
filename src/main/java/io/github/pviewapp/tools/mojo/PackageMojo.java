@@ -1,7 +1,6 @@
-package io.github.pview.tools.mojo;
+package io.github.pviewapp.tools.mojo;
 
-import io.github.pview.tools.*;
-
+import io.github.pviewapp.tools.*;
 import org.apache.commons.io.FileUtils;
 import org.apache.maven.artifact.DependencyResolutionRequiredException;
 
@@ -60,6 +59,9 @@ public class PackageMojo extends AbstractMojo {
 
     @Parameter(defaultValue = "runtime")
     private String runtimeName;
+
+    @Parameter(defaultValue = "${project.name}-${project.version}.%s")
+    private String compressedPackageName;
 
     @Parameter
     private List<String> jlinkArguments = List.of();
@@ -200,6 +202,8 @@ public class PackageMojo extends AbstractMojo {
         return effectiveRuntimePath;
     }
 
+    // todo add other platform support
+    @SuppressWarnings({"UnusedReturnValue", "SwitchStatementWithTooFewBranches"})
     private Path createCompressedPackage() throws IOException {
         switch (Platform.getCurrentPlatform()) {
             case WINDOWS:
@@ -222,7 +226,8 @@ public class PackageMojo extends AbstractMojo {
                 .build(outputPath.toPath().resolve("launch4j-temp"));
 
         final var zipLocation =
-                new File(outputPath, String.format("%s-%s.zip", appName, appVersion));
+                new File(outputPath, String.format(compressedPackageName, "zip"));
+
         ZipUtil.pack(effectiveRuntimePath.toFile(), zipLocation);
 
         Files.delete(winWrapper);

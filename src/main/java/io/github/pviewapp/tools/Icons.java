@@ -1,4 +1,4 @@
-package io.github.pview.tools;
+package io.github.pviewapp.tools;
 
 import java.io.FileNotFoundException;
 import java.io.IOException;

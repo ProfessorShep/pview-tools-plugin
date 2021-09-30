@@ -1,4 +1,4 @@
-package io.github.pview.tools;
+package io.github.pviewapp.tools;
 
 import org.apache.commons.io.IOUtils;
 import org.zeroturnaround.zip.ZipUtil;
@@ -64,11 +64,23 @@ public class Launch4JBuilder {
             IOUtils.write(config, out, StandardCharsets.UTF_8);
         }
 
-        if (!Files.exists(workDir.resolve("launch4j.exe"))) {
-            ZipUtil.unpack(getClass().getResourceAsStream("/io/github/pviewapp/tools/launch4j.zip"), workDir.toFile());
+        final var launch4jExe = workDir.resolve("launch4j.exe").toAbsolutePath();
+        if (!Files.exists(launch4jExe)) {
+            ZipUtil.unpack(getClass().getResourceAsStream("/io/github/pviewapp/tools/launch4j.zip"), workDir.toFile(), StandardCharsets.UTF_8);
         }
 
-        Runtime.getRuntime().exec(new String[]{"launch4j.exe", "l4jConfig.xml"}, null, workDir.toFile());
+        try {
+            Thread.sleep(1000);
+            new ProcessBuilder(launch4jExe.toString(), "l4jConfig.xml")
+                    .inheritIO()
+                    .directory(workDir.toFile())
+                    .start()
+                    .waitFor();
+            Thread.sleep(1000);
+        } catch (InterruptedException e) {
+            Thread.currentThread().interrupt();
+            return null;
+        }
 
         return outFile;
     }

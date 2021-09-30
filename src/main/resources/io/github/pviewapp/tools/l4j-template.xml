@@ -12,7 +12,7 @@
     </classPath>
 
     <jre>
-        <path>runtime</path>
+        <path>bin/java.exe</path>
         <bundledJre64Bit>true</bundledJre64Bit>
 
         %s
