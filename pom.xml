@@ -6,7 +6,7 @@
 
     <groupId>io.github.pviewapp</groupId>
     <artifactId>pview-tools-plugin</artifactId>
-    <version>1.0.0-rc1</version>
+    <version>1.0.0</version>
 
     <organization>
         <name>pView</name>
