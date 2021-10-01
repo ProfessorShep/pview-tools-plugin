@@ -1,4 +1,4 @@
-package io.github.pviewapp.tools;
+package io.github.pviewapp.packaging;
 
 import org.apache.commons.io.IOUtils;
 import org.zeroturnaround.zip.ZipUtil;
@@ -45,7 +45,7 @@ public class Launch4JBuilder {
 
     public Path build(Path workDir) throws IOException {
         @SuppressWarnings("ConstantConditions") final var template = IOUtils.toString(
-                getClass().getResourceAsStream("/io/github/pviewapp/tools/l4j-template.xml"),
+                getClass().getResourceAsStream("/io/github/pviewapp/packaging/l4j-template.xml"),
                 StandardCharsets.UTF_8);
 
         final var config = String.format(
@@ -66,7 +66,7 @@ public class Launch4JBuilder {
 
         final var launch4jExe = workDir.resolve("launch4j.exe").toAbsolutePath();
         if (!Files.exists(launch4jExe)) {
-            ZipUtil.unpack(getClass().getResourceAsStream("/io/github/pviewapp/tools/launch4j.zip"), workDir.toFile(), StandardCharsets.UTF_8);
+            ZipUtil.unpack(getClass().getResourceAsStream("/io/github/pviewapp/packaging/launch4j.zip"), workDir.toFile(), StandardCharsets.UTF_8);
         }
 
         try {

@@ -1,4 +1,4 @@
-package io.github.pviewapp.tools;
+package io.github.pviewapp.packaging;
 
 public class Threads {
     private Threads() {}

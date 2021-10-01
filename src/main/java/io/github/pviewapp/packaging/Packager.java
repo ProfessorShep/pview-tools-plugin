@@ -1,7 +1,7 @@
-package io.github.pviewapp.tools;
+package io.github.pviewapp.packaging;
 
-import io.github.pviewapp.tools.jdktools.JLink;
-import io.github.pviewapp.tools.jdktools.JPackage;
+import io.github.pviewapp.packaging.jdktools.JLink;
+import io.github.pviewapp.packaging.jdktools.JPackage;
 
 import java.io.IOException;
 

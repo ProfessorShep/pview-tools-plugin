@@ -1,4 +1,4 @@
-package io.github.pviewapp.tools.jdktools;
+package io.github.pviewapp.packaging.jdktools;
 
 import java.nio.file.Path;
 

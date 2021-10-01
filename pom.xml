@@ -5,7 +5,7 @@
     <modelVersion>4.0.0</modelVersion>
 
     <groupId>io.github.pviewapp</groupId>
-    <artifactId>pview-tools-plugin</artifactId>
+    <artifactId>pview-packaging-plugin</artifactId>
     <version>1.0.0</version>
 
     <organization>

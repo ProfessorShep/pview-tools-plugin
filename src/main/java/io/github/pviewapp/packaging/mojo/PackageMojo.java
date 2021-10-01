@@ -1,8 +1,6 @@
-package io.github.pviewapp.tools.mojo;
+package io.github.pviewapp.packaging.mojo;
 
-import com.google.common.collect.ImmutableList;
-import com.google.common.collect.ImmutableSet;
-import io.github.pviewapp.tools.*;
+import io.github.pviewapp.packaging.*;
 import org.apache.commons.io.FileUtils;
 import org.apache.maven.artifact.DependencyResolutionRequiredException;
 
