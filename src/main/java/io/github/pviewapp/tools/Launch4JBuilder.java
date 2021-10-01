@@ -70,13 +70,13 @@ public class Launch4JBuilder {
         }
 
         try {
-            Thread.sleep(1000);
+            Threads.pause();
             new ProcessBuilder(launch4jExe.toString(), "l4jConfig.xml")
                     .inheritIO()
                     .directory(workDir.toFile())
                     .start()
                     .waitFor();
-            Thread.sleep(1000);
+            Threads.pause();
         } catch (InterruptedException e) {
             Thread.currentThread().interrupt();
             return null;
@@ -89,7 +89,7 @@ public class Launch4JBuilder {
         final StringBuilder s = new StringBuilder(("opt".length() + 3) * jvmArgs.size() + (jvmArgs.size() * 5));
 
         for (var value : jvmArgs) {
-            s.append("<").append("opt").append(">").append(value.replace("$PV_RESOURCE_DIR", ".")).append("</opt>\n");
+            s.append("<").append("opt").append(">").append(value).append("</opt>\n");
         }
 
         return s.toString();

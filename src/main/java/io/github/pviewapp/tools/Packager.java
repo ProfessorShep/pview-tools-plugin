@@ -124,7 +124,7 @@ public class Packager {
 
         for (var jvmArg : jvmArgs) {
             args.add("--java-options");
-            args.add(jvmArg.replace("$PV_RESOURCE_DIR", "$APPDIR/../" + runtimePath.getFileName().toString()));
+            args.add(jvmArg.replace("$RESOURCE_DIR", "$APPDIR/" + runtimePath.getFileName().toString()));
         }
 
         JPackage.run(args.toArray(new String[0]));

@@ -8,11 +8,11 @@
 
     <classPath>
         <mainClass>%s</mainClass>
-        <cp>./</cp>
+        <cp>.</cp>
     </classPath>
 
     <jre>
-        <path>bin/java.exe</path>
+        <path>%%EXEDIR%%</path>
         <bundledJre64Bit>true</bundledJre64Bit>
 
         %s

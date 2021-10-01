@@ -62,6 +62,9 @@
                     <execution>
                         <id>default-descriptor</id>
                         <phase>process-classes</phase>
+                        <configuration>
+                            <encoding>UTF-8</encoding>
+                        </configuration>
                     </execution>
                     <execution>
                         <id>help-goal</id>

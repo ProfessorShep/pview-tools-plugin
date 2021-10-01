@@ -1,5 +1,7 @@
 package io.github.pviewapp.tools.mojo;
 
+import com.google.common.collect.ImmutableList;
+import com.google.common.collect.ImmutableSet;
 import io.github.pviewapp.tools.*;
 import org.apache.commons.io.FileUtils;
 import org.apache.maven.artifact.DependencyResolutionRequiredException;
@@ -17,6 +19,7 @@ import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.StandardCopyOption;
 import java.util.*;
+import java.util.stream.Collectors;
 
 @SuppressWarnings({"FieldMayBeFinal"})
 @Mojo(name = "package", defaultPhase = LifecyclePhase.PACKAGE, requiresDependencyResolution = ResolutionScope.COMPILE_PLUS_RUNTIME)
@@ -39,17 +42,18 @@ public class PackageMojo extends AbstractMojo {
 
     /**
      * The main executable class.
-     *
-     * Format: {@code <moduleName>/<className>}.
      */
     @Parameter(required = true)
     private String mainClass;
 
+    @Parameter(required = true)
+    private String mainModule;
+
     @Parameter
     private List<String> jvmArguments = List.of();
 
-    @Parameter(required = true)
-    private Set<String> modules;
+    @Parameter
+    private Set<String> additionalModules = Set.of();
 
     @Parameter
     private File runtimePath = null;
@@ -79,7 +83,7 @@ public class PackageMojo extends AbstractMojo {
     private List<String> jpackageArgumentsLinux = List.of();
 
     @Parameter
-    private Set<File> resources = Set.of();
+    private File resourceDirectory = null;
 
     @Parameter(required = true)
     private File iconDirectory;
@@ -153,15 +157,25 @@ public class PackageMojo extends AbstractMojo {
         jpackageArgs.add("--icon");
         jpackageArgs.add(Icons.get(iconDirectory.toPath()).toString());
 
+        if (resourceDirectory != null) {
+            jpackageArgs.add("-i");
+            jpackageArgs.add(resourceDirectory.getAbsolutePath());
+        }
+
         try {
             final var modulePath = String.join(File.pathSeparator, project.getRuntimeClasspathElements());
             getLog().debug("Using module path: " + modulePath);
+
+            final var modules = new HashSet<String>(additionalModules.size() + 1);
+
+            modules.addAll(additionalModules);
+            modules.add(mainModule);
 
             return new PackagerBuilder()
                     .appName(appName)
                     .appVersion(appVersion)
                     .jvmArguments(jvmArguments)
-                    .mainClass(mainClass)
+                    .mainClass(mainModule + "/" + mainClass)
                     .modules(modules)
                     .baseDirectory(baseDir.toPath())
                     .modulePath(modulePath)
@@ -186,19 +200,6 @@ public class PackageMojo extends AbstractMojo {
             effectiveRuntimePath = this.runtimePath.toPath();
         }
 
-        for (var resource : resources) {
-            final var path = resource.toPath();
-
-            try {
-                if (Files.isRegularFile(path)) {
-                    Files.copy(path, effectiveRuntimePath, StandardCopyOption.REPLACE_EXISTING);
-                } else {
-                    FileUtils.copyDirectoryToDirectory(resource, effectiveRuntimePath.toFile());
-                }
-            } catch (IOException e) {
-                throw new MojoExecutionException("Error during IO: ", e);
-            }
-        }
         return effectiveRuntimePath;
     }
 
@@ -207,20 +208,25 @@ public class PackageMojo extends AbstractMojo {
     private Path createCompressedPackage() throws IOException {
         switch (Platform.getCurrentPlatform()) {
             case WINDOWS:
-                return createWindowsPackage();
+                return createWindowsCompressedPackage();
             default:
                 return null;
         }
     }
 
-    private Path createWindowsPackage() throws IOException {
+    private Path createWindowsCompressedPackage() throws IOException {
         if (Platform.getCurrentPlatform() != Platform.WINDOWS) {
             throw new UnsupportedOperationException("Platform needs to be windows for zip package");
         }
 
+        final File resourceDest = effectiveRuntimePath.resolve("resources").toFile();
+
+        FileUtils.copyDirectory(resourceDirectory, resourceDest);
+
         final var winWrapper = new Launch4JBuilder()
                 .outputFile(effectiveRuntimePath.resolve(appName + ".exe"))
-                .jvmArgs(jvmArguments)
+                .jvmArgs(jvmArguments.stream().map(s -> s.replace("$RESOURCE_DIR", "./resources"))
+                        .collect(Collectors.toUnmodifiableList()))
                 .mainClass(mainClass)
                 .iconDirectory(iconDirectory.toPath())
                 .build(outputPath.toPath().resolve("launch4j-temp"));
@@ -230,7 +236,10 @@ public class PackageMojo extends AbstractMojo {
 
         ZipUtil.pack(effectiveRuntimePath.toFile(), zipLocation);
 
+        Threads.pause();
+
         Files.delete(winWrapper);
+        FileUtils.deleteDirectory(resourceDest);
 
         return zipLocation.toPath();
     }
